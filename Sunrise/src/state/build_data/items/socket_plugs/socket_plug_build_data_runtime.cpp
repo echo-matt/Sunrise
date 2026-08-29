@@ -85,11 +85,6 @@ bool visit_socket_plug_pool(std::uint16_t itemDefinitionIndex,
            && items::socket_plugs::visit_pool(itemDefinitionIndex, lane, visitor, context);
 }
 
-/** Names the socket entry a rolled lane resolves through, or kNoSocketEntry when it has none. */
-std::uint8_t socket_entry_index(std::uint16_t itemDefinitionIndex, std::uint8_t lane) noexcept {
-    return items::socket_plugs::socket_entry_index(itemDefinitionIndex, lane);
-}
-
 /** Walks one lane's native-order randomized roll pool once the whole relation is in State. */
 bool visit_socket_roll_pool(std::uint16_t itemDefinitionIndex,
                             std::uint8_t lane,

@@ -65,13 +65,6 @@ void clear() noexcept;
                                    MemberVisitor visitor,
                                    void* context) noexcept;
 
-/**
- * @return The socket-entry index a rolled lane resolves through, or kNoSocketEntry when the lane
- * has no matching entry. A missing rule lane also returns kNoSocketEntry (safe no-op).
- */
-[[nodiscard]] std::uint8_t socket_entry_index(std::uint16_t itemDefinitionIndex,
-                                              std::uint8_t lane) noexcept;
-
 /** Copies the complete relation while holding its single shared lock. */
 [[nodiscard]] bool snapshot(std::span<Rule> rules,
                             std::size_t& ruleCount,

@@ -466,32 +466,4 @@ bool visit_roll_plugs(std::span<const std::byte> definition,
                                  context);
 }
 
-bool read_roll_set_index(std::span<const std::byte> definition,
-                         std::uint8_t lane,
-                         std::uint16_t& setIndex) noexcept {
-    setIndex = kUnavailablePlug;
-    if (lane >= kSocketCapacity) {
-        return false;
-    }
-    std::int64_t socketBlockRelative = 0;
-    if (!read(definition, kSocketBlockOffset, socketBlockRelative) || socketBlockRelative == 0) {
-        return false;
-    }
-    const std::int64_t socketBlock =
-        static_cast<std::int64_t>(kSocketBlockOffset) + socketBlockRelative;
-    if (socketBlock < 0 || static_cast<std::uint64_t>(socketBlock) >= definition.size()) {
-        return false;
-    }
-    Array sockets{};
-    if (!find_array_at(definition, static_cast<std::size_t>(socketBlock), sockets)
-        || sockets.elementClass != kOrdinarySocketClass || lane >= sockets.count
-        || sockets.dataOffset > definition.size()
-        || sockets.count > (definition.size() - sockets.dataOffset) / kSocketEntryStride) {
-        return false;
-    }
-    const std::size_t socketEntry =
-        sockets.dataOffset + static_cast<std::size_t>(lane) * kSocketEntryStride;
-    return read(definition, socketEntry + kRandomizedPlugSetIndexOffset, setIndex);
-}
-
 } // namespace sunrise::middleware::content::packages::tables::items

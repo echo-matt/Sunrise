@@ -118,13 +118,6 @@ struct Item {
      */
     std::array<std::uint64_t, kPlugCapacity> availablePlugRows{};
     /**
-     * Per-lane 1-based randomized-set row this instance pinned onto the socket entry that backs
-     * the lane (matched by roll-pool reference). Zero means the lane did not pin a state. Keeping
-     * the row on the item lets the loadout fold it into the instance's socket-entry states, which
-     * is what makes the hover preview resolve the exact rolled perk the inspection screen shows.
-     */
-    std::array<std::uint8_t, kPlugCapacity> rollRowByLane{};
-    /**
      * Selected ability-node socket entries. Only meaningful on a subclass. Kept on the item, not
      * the character, so each owned subclass remembers its own picks. Defaults match
      * state::kDefault*AbilityEntry, literal here to avoid a circular include.

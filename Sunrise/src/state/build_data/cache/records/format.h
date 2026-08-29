@@ -29,7 +29,7 @@ inline constexpr std::array<char, 8> kCacheMagic{'S', 'U', 'N', 'R', 'I', 'S', '
  * Bump it when a stored shape changes, and when the extraction filling it changes what it writes.
  * A cached row survives a code change, so a corrected walk keeps publishing the old rows.
  */
-inline constexpr std::uint32_t kCacheFormatVersion = 49;
+inline constexpr std::uint32_t kCacheFormatVersion = 50;
 /** Signed -1 on disk means there is no equipment slot. */
 inline constexpr std::int8_t kAbsentEquipmentSlot = -1;
 /** The standard 64-bit FNV-1a offset basis starts the payload checksum. */
@@ -194,8 +194,8 @@ struct ItemDetailRecord {
 struct SocketPlugRuleRecord {
     std::uint16_t itemDefinitionIndex{};
     std::uint8_t lane{};
-    /** Socket-entry index, or 0xFF when the lane has no matching socket entry. */
-    std::uint8_t socketEntryIndex{};
+    /** Must be zero so all unused bytes have one canonical value. */
+    std::uint8_t reserved{};
     std::uint32_t poolIndex{};
     std::uint32_t rollPoolIndex{};
 };

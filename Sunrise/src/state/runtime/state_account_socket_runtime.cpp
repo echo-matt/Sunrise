@@ -223,8 +223,6 @@ bool plug_offered_in_lane(const authored_inventory::Item& item,
     // rows this instance owns -- the same two sources the Client's inspection grid walks. Taking
     // the owned rows keeps the roll reversible: the rolled plug is never in the allowed pool, so
     // its owned row is the only way back to it after a curated plug is put in its place.
-    const bool rolledLane =
-        (target->rolledLaneMask & static_cast<std::uint16_t>(1U << socketLane)) != 0;
     if (!plug_offered_in_lane(
             *target, targetDefinition.definitionIndex, socketLane, plugDefinitionIndex)) {
         return fail("plug_not_offered");
@@ -360,18 +358,6 @@ bool plug_offered_in_lane(const authored_inventory::Item& item,
         return fail("target_copy");
     }
     changed->sockets = authoredSockets;
-    if (rolledLane) {
-        // The lane's pinned socket-entry state names the randomized-set row the hover preview
-        // resolves through, so it must follow the plug that just landed or hover keeps showing
-        // the rolled perk the inspection grid no longer reads. A plug outside the randomized set
-        // has no row to pin: the lane unpins and the entry falls back to its definition state.
-        const std::size_t grantedRollRow = roll_row_of(
-            targetDefinition.definitionIndex, socketLane, grantedDefinition.definitionIndex);
-        changed->rollRowByLane[socketLane] =
-            grantedRollRow < std::numeric_limits<std::uint8_t>::max()
-                ? static_cast<std::uint8_t>(grantedRollRow + 1U)
-                : std::uint8_t{0};
-    }
 
     AccountState candidate = chargedAccount;
     candidate.characters[characterIndex] = after;

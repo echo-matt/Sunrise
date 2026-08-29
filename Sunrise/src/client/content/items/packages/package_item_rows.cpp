@@ -54,21 +54,6 @@ bool build_item_rows(const reader::Source& source,
     }
     const bool detailStorageReady = !needDetails || storage.details.size() == kDetailCapacity;
     const std::span<const std::byte> container{storage.child};
-    // The socket-entry-list table (investment root slot 97) is resolved once so each rolled
-    // lane can be matched to the socket entry the hover preview reads through.
-    tables::Array socketEntryTable{};
-    std::uint32_t socketTableTag = 0;
-    const bool socketTableReady =
-        !needSocketPlugs
-        || (tables::slot_tag(std::span<const std::byte>{storage.root},
-                             tables::kSocketEntryListTableSlot,
-                             socketTableTag)
-            && socketTableTag != 0
-            && reader::read_tag(source, storage.scratch, socketTableTag, storage.socketEntryTable)
-            && tables::find_array_at(std::span<const std::byte>{storage.socketEntryTable},
-                                     tables::kTableArrayDescriptor,
-                                     socketEntryTable)
-            && socketEntryTable.elementClass == tables::kSocketEntryListTableClass);
     reason = "rows";
     // The detail closure is gathered during this one walk. Collections can name any installed
     // item row, including profile-owned shaders and modifications, so retain every readable row.
@@ -167,54 +152,10 @@ bool build_item_rows(const reader::Source& source,
                 storage.details[builtDetailCount++] = detail;
             }
             if (needSocketPlugs) {
-                // Collect every socket entry's plug-set reference for this item so a rolled lane
-                // can be matched to the exact entry the hover preview resolves. Resolution errors
-                // leave the pool empty, which is the safe no-op (no state is pinned).
-                std::array<std::uint16_t, 64> entryPlugSets{};
-                std::size_t entryPlugCount = 0;
-                if (socketTableReady && item.hasSocketEntryList
-                    && item.socketEntryListIndex < socketEntryTable.count) {
-                    tables::IndexRow listRow{};
-                    if (tables::index_row(std::span<const std::byte>{storage.socketEntryTable},
-                                          socketEntryTable,
-                                          item.socketEntryListIndex,
-                                          listRow)
-                        && listRow.targetTag != 0
-                        && reader::read_tag(
-                            source, storage.scratch, listRow.targetTag, storage.socketEntryList)) {
-                        tables::Array entries{};
-                        if (tables::find_array_at(
-                                std::span<const std::byte>{storage.socketEntryList},
-                                tables::kSocketEntryArrayDescriptor,
-                                entries)
-                            && entries.count <= entryPlugSets.size()) {
-                            for (std::uint64_t e = 0; e < entries.count; ++e) {
-                                const std::size_t base =
-                                    entries.dataOffset
-                                    + static_cast<std::size_t>(e) * tables::kSocketEntrySize;
-                                std::uint16_t plugSet = 0;
-                                // The read sits at the plug-set field, not at the entry's first
-                                // byte, so the whole field has to fit inside the resolved blob.
-                                if (base > storage.socketEntryList.size()
-                                    || tables::kSocketEntryPlugSetIndex + sizeof plugSet
-                                           > storage.socketEntryList.size() - base) {
-                                    break;
-                                }
-                                std::memcpy(&plugSet,
-                                            storage.socketEntryList.data() + base
-                                                + tables::kSocketEntryPlugSetIndex,
-                                            sizeof plugSet);
-                                entryPlugSets[entryPlugCount++] = plugSet;
-                            }
-                        }
-                    }
-                }
-                (void)socketPlugBuild.append(
-                    item,
-                    std::span<const std::byte>{storage.definition},
-                    std::span<const std::byte>{storage.plugSetTable},
-                    std::span<const std::uint16_t>{entryPlugSets}.first(entryPlugCount),
-                    table.count);
+                (void)socketPlugBuild.append(item,
+                                                   std::span<const std::byte>{storage.definition},
+                                                   std::span<const std::byte>{storage.plugSetTable},
+                                                   table.count);
             }
         }
         if (needDetails) {

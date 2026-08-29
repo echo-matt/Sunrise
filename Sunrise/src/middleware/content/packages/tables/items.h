@@ -108,8 +108,8 @@ using AllowedPlugVisitor = bool (*)(void* context, std::uint32_t itemDefinitionI
  * @param context Opaque consumer state.
  * @param includeRandomizedSet Whether the socket's randomized draw pool joins the walk. A socket
  * offers its embedded and reusable plugs for insertion; the randomized set is what a roll is
- * drawn from and is never offered, so a plug taken from it can be socketed but never selected
- * again once something else replaces it.
+ * drawn from and is not part of this curated relation. A rolled instance separately publishes its
+ * owned randomized rows, which is what keeps its selected plug reachable after a curated swap.
  * @return True when every referenced array is structurally valid and accepted by the visitor.
  */
 [[nodiscard]] bool visit_allowed_plugs(std::span<const std::byte> definition,
@@ -131,16 +131,5 @@ using AllowedPlugVisitor = bool (*)(void* context, std::uint32_t itemDefinitionI
                                     std::uint8_t lane,
                                     AllowedPlugVisitor visitor,
                                     void* context) noexcept;
-
-/**
- * Reads the native randomized-set index one ordinary socket lane declares.
- * This is the same set a socket entry with an equal plug-set reference rolls from, which is how
- * a rolled lane is matched to the socket entry the hover preview resolves through.
- * @param setIndex Receives the lane's randomized-set index, or kUnavailablePlug when absent.
- * @return True when the lane shares the socket block and carries a randomized set.
- */
-[[nodiscard]] bool read_roll_set_index(std::span<const std::byte> definition,
-                                       std::uint8_t lane,
-                                       std::uint16_t& setIndex) noexcept;
 
 } // namespace sunrise::middleware::content::packages::tables::items

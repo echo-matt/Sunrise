@@ -185,24 +185,6 @@ bool resolve_item(const authored_inventory::Item& authored,
                           character.acquiredSubclassAbilityMask,
                           candidate.item.instance.socketEntryStates,
                           candidate.item.instance.socketSelectors);
-    // Fold a rolled weapon's per-lane roll rows onto the socket entries that back them. The hover
-    // preview reads these states directly (a nonzero N is the 1-based roll row of the entry's
-    // plug set), so this pins the exact rolled perk the inspection grid already reads. Lanes with
-    // no matching entry keep their absent state -- the safe no-op.
-    for (std::size_t lane = 0; lane < authored.rollRowByLane.size(); ++lane) {
-        const std::uint8_t row = authored.rollRowByLane[lane];
-        if (row == 0) {
-            continue;
-        }
-        const std::uint8_t entry = state::build_data::socket_entry_index(
-            itemDefinition.definitionIndex, static_cast<std::uint8_t>(lane));
-        if (entry == state::build_data::items::socket_plugs::kNoSocketEntry
-            || entry >= candidate.item.instance.socketEntryStates.size()) {
-            continue;
-        }
-        candidate.item.instance.socketEntryStates[entry] =
-            static_cast<instance::SocketEntryState>(row);
-    }
     output = candidate;
     return true;
 }

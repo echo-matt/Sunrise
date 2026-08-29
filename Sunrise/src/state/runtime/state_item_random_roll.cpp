@@ -223,10 +223,14 @@ bool roll_random_bytes(authored_inventory::Item& item,
         }
 
         RollPool roll{};
-        (void)build_data::visit_socket_roll_pool(itemDefinition.definitionIndex,
-                                                 static_cast<std::uint8_t>(lane),
-                                                 &collect_roll_member,
-                                                 &roll);
+        if (!build_data::visit_socket_roll_pool(itemDefinition.definitionIndex,
+                                                static_cast<std::uint8_t>(lane),
+                                                &collect_roll_member,
+                                                &roll)) {
+            // A pool wider than the 64 owned-row bits cannot be represented faithfully. The
+            // visitor fails at capacity, so discard its prefix and leave this lane authored.
+            roll = {};
+        }
         // A masterwork socket is an ordinary lane whose allowed pool carries the global
         // masterwork-stat plugs under their ten fixed categories. Its members never join the
         // randomized set, so the roll pool alone cannot see it. One Tier-1 plug per stat family
@@ -249,10 +253,9 @@ bool roll_random_bytes(authored_inventory::Item& item,
 
         // A masterwork lane is authored directly: one random stat's Tier-1 plug from the scanned
         // reusable candidates replaces the definition's initial plug in the lane. Perk lanes are
-        // authored through the randomized set: the Client resolves the lane's socket entry through
-        // a nonzero state N (the 1-based randomized-set row), so Sunrise picks a row r, authors the
-        // instance plug straight out of the same native-order set, and pins the entry state to
-        // r + 1, keeping hover and inspection on the identical rolled perk.
+        // authored from the randomized set's native row order, and the selected row is marked owned
+        // below. The authored plug drives inspection while the owned-row mask drives hover and keeps
+        // the rolled perk reachable after a curated plug replaces it.
         std::uint16_t chosenPlugIndex = 0;
         std::size_t chosenRow = 0;
         std::uint64_t ownedRows = 0;
@@ -337,15 +340,6 @@ bool roll_random_bytes(authored_inventory::Item& item,
         item.availablePlugRows[lane] = ownedRows;
         item.rolledLaneMask |= static_cast<std::uint16_t>(1U << lane);
         ++rolledLanes;
-        // Pin the 1-based row on the socket entry that backs this perk lane so the hover preview
-        // resolves through the same plug set the inspection grid reads. A masterwork lane reads
-        // straight out of the instance and needs no pin. A lane with no matching entry
-        // (kNoSocketEntry) simply never pins -- the safe no-op.
-        const std::uint8_t laneEntry = build_data::socket_entry_index(
-            itemDefinition.definitionIndex, static_cast<std::uint8_t>(lane));
-        if (!masterworkSocket && laneEntry != items::socket_plugs::kNoSocketEntry) {
-            item.rollRowByLane[lane] = static_cast<std::uint8_t>(chosenRow + 1U);
-        }
 
         std::array<char, core::log::kLineCapacity> laneLine{};
         const int laneCount = std::snprintf(
@@ -354,7 +348,7 @@ bool roll_random_bytes(authored_inventory::Item& item,
             "ev=item_roll stage=lane lane=%zu rows=%zu "
             "curated=%zu row=%zu stats=%zu valid=%zu "
             "byte_val=0x%02X socket_type=%u category=0x%08X "
-            "masterwork=%u entry=%u "
+            "masterwork=%u "
             "initial=0x%08X chosen=0x%08X owned_mask=0x%016llX",
             lane,
             roll.count,
@@ -366,13 +360,12 @@ bool roll_random_bytes(authored_inventory::Item& item,
             itemDetail.socketTypes[lane],
             hasInitialPlug ? initialPlug.plugCategoryHash : 0U,
             static_cast<unsigned>(masterworkSocket ? 1U : 0U),
-            static_cast<unsigned>(laneEntry),
             hasInitialPlug ? initialPlug.definitionHash : 0U,
             chosenPlug.definitionHash,
             static_cast<unsigned long long>(item.availablePlugRows[lane]));
         if (laneCount > 0) {
             core::log::write(core::log::Channel::state,
-                             core::log::Level::info,
+                             core::log::Level::debug,
                              {laneLine.data(), static_cast<std::size_t>(laneCount)});
         }
     }
@@ -399,7 +392,7 @@ bool roll_random_bytes(authored_inventory::Item& item,
                                     item.randomRoll[7]);
     if (count > 0) {
         core::log::write(core::log::Channel::state,
-                         core::log::Level::info,
+                         core::log::Level::debug,
                          {line.data(), static_cast<std::size_t>(count)});
     }
     return true;

@@ -2,23 +2,27 @@
 
 namespace sunrise::state::build_data::cache::records {
 
-/** Encodes one exact item/lane rule. The old padding byte now carries the socket-entry index. */
+/** Encodes one exact item/lane rule only when its canonical padding is zero. */
 bool encode(const items::socket_plugs::Rule& value, SocketPlugRuleRecord& record) noexcept {
     record = {};
+    if (value.reserved != 0) {
+        return false;
+    }
     record.itemDefinitionIndex = value.itemDefinitionIndex;
     record.lane = value.lane;
-    record.socketEntryIndex = value.socketEntryIndex;
     record.poolIndex = value.poolIndex;
     record.rollPoolIndex = value.rollPoolIndex;
     return true;
 }
 
-/** Decodes one exact item/lane rule. Every byte is meaningful, so there is nothing to check. */
+/** Decodes one exact item/lane rule after checking its reserved byte. */
 bool decode(const SocketPlugRuleRecord& record, items::socket_plugs::Rule& value) noexcept {
     value = {};
+    if (record.reserved != 0) {
+        return false;
+    }
     value.itemDefinitionIndex = record.itemDefinitionIndex;
     value.lane = record.lane;
-    value.socketEntryIndex = record.socketEntryIndex;
     value.poolIndex = record.poolIndex;
     value.rollPoolIndex = record.rollPoolIndex;
     return true;

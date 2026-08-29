@@ -191,13 +191,6 @@ publish_socket_plug_rules(std::span<const items::socket_plugs::Rule> rules,
                                           void* context) noexcept;
 
 /**
- * @return The socket-entry index a rolled lane resolves through, or
- * items::socket_plugs::kNoSocketEntry when the lane has no matching entry or no installed rule.
- */
-[[nodiscard]] std::uint8_t socket_entry_index(std::uint16_t itemDefinitionIndex,
-                                              std::uint8_t lane) noexcept;
-
-/**
  * Walks one lane's native-order randomized roll pool. Missing relations fail closed.
  * @return True when the lane has a roll pool and the visitor saw every member.
  */

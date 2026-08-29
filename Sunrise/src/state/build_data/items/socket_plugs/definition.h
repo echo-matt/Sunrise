@@ -24,14 +24,12 @@ inline constexpr std::size_t kRollPoolCapacity = kRuleCapacity + 1;
 /** Four million 16-bit roll members bound the native-order relation. */
 inline constexpr std::size_t kRollMemberCapacity = 1U << 22U;
 
-/** Canonically marks a lane with no matching socket entry (the common intrinsic case). */
-inline constexpr std::uint8_t kNoSocketEntry = 0xFF;
 /** One installed item socket and the exact deduplicated plug pool it accepts. */
 struct Rule {
     std::uint16_t itemDefinitionIndex{};
     std::uint8_t lane{};
-    /** Socket-entry index whose roll pool is this lane's roll pool, or kNoSocketEntry. */
-    std::uint8_t socketEntryIndex{};
+    /** Must remain zero so the runtime and packed forms are deterministic. */
+    std::uint8_t reserved{};
     std::uint32_t poolIndex{};
     /** Native-order randomized roll-set pool for the lane, or kEmptyRollPoolIndex. */
     std::uint32_t rollPoolIndex{};

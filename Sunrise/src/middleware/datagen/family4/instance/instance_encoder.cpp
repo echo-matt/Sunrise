@@ -68,10 +68,8 @@ namespace {
 
     for (std::size_t index = 0; index < input.socketEntryStates.size(); ++index) {
         const SocketEntryState state = input.socketEntryStates[index];
-        // Absent (0), the subclass sentinels (16/17/18) and any nonzero 1-based roll row (1..63)
-        // are all legal. The Client resolves a roll row directly, so these keep index within the
-        // entry count to stay safe.
-        if (static_cast<std::uint8_t>(state) > 63) {
+        if (state != SocketEntryState::absent && state != SocketEntryState::ready
+            && state != SocketEntryState::acquired && state != SocketEntryState::active) {
             return false;
         }
         if (index >= input.socketEntryCount && state != SocketEntryState::absent) {

@@ -32,7 +32,6 @@ public:
     [[nodiscard]] bool append(const tables::items::Row& item,
                               std::span<const std::byte> itemDefinition,
                               std::span<const std::byte> plugSetTable,
-                              std::span<const std::uint16_t> entryPlugSetIndices,
                               std::size_t itemDefinitionCount) noexcept;
 
     /** Publishes the completed exact relation, then releases its transient scratch. */

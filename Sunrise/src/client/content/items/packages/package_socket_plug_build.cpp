@@ -247,7 +247,6 @@ bool SocketPlugBuild::intern_roll(std::uint32_t& rollPoolIndex) noexcept {
 bool SocketPlugBuild::append(const tables::items::Row& item,
                              std::span<const std::byte> itemDefinition,
                              std::span<const std::byte> plugSetTable,
-                             std::span<const std::uint16_t> entryPlugSetIndices,
                              std::size_t itemDefinitionCount) noexcept {
     if (rules_.empty() || item.definitionIndex >= itemDefinitionCount
         || item.socketCount > socket_plugs::kLaneCapacity) {
@@ -291,25 +290,7 @@ bool SocketPlugBuild::append(const tables::items::Row& item,
             rollPoolIndex = socket_plugs::kEmptyRollPoolIndex;
             complete = false;
         }
-        // A rolled lane's perk is resolved by the hover preview through the socket entry whose
-        // roll pool is this lane's roll pool. Match the lane's randomized-set index against each
-        // entry's plug-set reference so state can be pinned on the exact entry (and never on a
-        // wrong lane position). A lane with no matching entry stays kNoSocketEntry and simply
-        // never pins, which is the safe no-op.
-        std::uint8_t socketEntryIndex = socket_plugs::kNoSocketEntry;
-        std::uint16_t laneSetIndex = tables::items::kUnavailablePlug;
-        if (tables::items::read_roll_set_index(itemDefinition, lane, laneSetIndex)
-            && laneSetIndex != tables::items::kUnavailablePlug) {
-            const std::uint16_t laneMask = static_cast<std::uint16_t>(laneSetIndex & 0x1FFFu);
-            for (std::size_t entry = 0; entry < entryPlugSetIndices.size(); ++entry) {
-                if ((entryPlugSetIndices[entry] & 0x1FFFu) == laneMask) {
-                    socketEntryIndex = static_cast<std::uint8_t>(entry);
-                    break;
-                }
-            }
-        }
-        rules_[ruleCount_++] = {
-            item.definitionIndex, lane, socketEntryIndex, poolIndex, rollPoolIndex};
+        rules_[ruleCount_++] = {item.definitionIndex, lane, 0, poolIndex, rollPoolIndex};
     }
     return complete;
 }

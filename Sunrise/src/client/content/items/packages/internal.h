@@ -61,10 +61,6 @@ struct Storage {
     std::vector<std::byte> definition{};
     /** Shared reusable/randomized plug-set table read from investment-root slot 51. */
     std::vector<std::byte> plugSetTable{};
-    /** Socket-entry-list table blob (investment-root slot 97), for lane<->entry matching. */
-    std::vector<std::byte> socketEntryTable{};
-    /** One resolved socket-entry-list definition blob while matching a rolled lane to its entry. */
-    std::vector<std::byte> socketEntryList{};
     /** Compact 0..3 special plug-category code of every dense installed item row. */
     std::array<std::uint8_t, state::build_data::items::kDefinitionCapacity> specialPlugCategories{};
     /** Inventory routing rows held until the paired bucket-definition table is resolved. */

@@ -50,8 +50,7 @@ bool valid(std::span<const Rule> rules,
     }
     for (std::size_t index = 0; index < rules.size(); ++index) {
         const Rule& rule = rules[index];
-        if ((rule.socketEntryIndex != kNoSocketEntry && rule.socketEntryIndex >= 64)
-            || rule.lane >= kLaneCapacity || rule.poolIndex >= pools.size()
+        if (rule.reserved != 0 || rule.lane >= kLaneCapacity || rule.poolIndex >= pools.size()
             || rule.rollPoolIndex >= rollPools.size()
             || (index != 0 && !rule_less(rules[index - 1], rule))) {
             return false;
@@ -209,22 +208,6 @@ bool visit_roll_pool(std::uint16_t itemDefinitionIndex,
         }
     }
     return true;
-}
-
-/** Returns the socket-entry index a rolled lane resolves through, or kNoSocketEntry. */
-std::uint8_t socket_entry_index(std::uint16_t itemDefinitionIndex, std::uint8_t lane) noexcept {
-    if (lane >= kLaneCapacity) {
-        return kNoSocketEntry;
-    }
-    const Lock::Shared guard(g_lock);
-    const auto rules = g_rules.rows();
-    const Rule key{itemDefinitionIndex, lane, 0, 0, 0};
-    const auto found = std::lower_bound(rules.begin(), rules.end(), key, rule_less);
-    if (found == rules.end() || found->itemDefinitionIndex != itemDefinitionIndex
-        || found->lane != lane) {
-        return kNoSocketEntry;
-    }
-    return found->socketEntryIndex;
 }
 
 /** Answers whether one definition occurs in any installed ordinary-socket plug pool. */

@@ -293,7 +293,6 @@ finalize_equipment_transition(const AccountState& account,
            && left.sockets.plugs == right.sockets.plugs && left.randomRoll == right.randomRoll
            && left.rolledLaneMask == right.rolledLaneMask
            && left.availablePlugRows == right.availablePlugRows
-           && left.rollRowByLane == right.rollRowByLane
            && left.movementAbilityEntry == right.movementAbilityEntry
            && left.grenadeAbilityEntry == right.grenadeAbilityEntry
            && left.superAbilityEntry == right.superAbilityEntry

@@ -202,8 +202,6 @@ inline constexpr std::size_t kSocketEntryPlugSource = 8;
 inline constexpr std::size_t kSocketEntryGroup = 12;
 /** Entry kind. Kind 34 is the super lane, which is active despite carrying no plug source. */
 inline constexpr std::size_t kSocketEntryKind = 13;
-/** Plug-set reference this socket entry rolls from, matched against a lane's randomized set. */
-inline constexpr std::size_t kSocketEntryPlugSetIndex = 56;
 /** The absent plug source. */
 inline constexpr std::uint32_t kNoPlugSource = 0x811C9DC5U;
 /** The bucket table declares its descriptor count here. */
