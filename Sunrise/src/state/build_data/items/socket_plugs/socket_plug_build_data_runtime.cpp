@@ -17,9 +17,11 @@ constexpr std::uint8_t kShaderBucketId = 14;
 [[nodiscard]] bool
 valid_socket_plug_publication(std::span<const items::socket_plugs::Rule> rules,
                               std::span<const items::socket_plugs::Pool> pools,
-                              std::span<const items::socket_plugs::Member> members) noexcept {
-    if (!items::socket_plugs::valid(rules, pools, members) || items::count() == 0
-        || !configured_item_details_ready()) {
+                              std::span<const items::socket_plugs::Member> members,
+                              std::span<const items::socket_plugs::Pool> rollPools,
+                              std::span<const items::socket_plugs::Member> rollMembers) noexcept {
+    if (!items::socket_plugs::valid(rules, pools, members, rollPools, rollMembers)
+        || items::count() == 0 || !configured_item_details_ready()) {
         return false;
     }
     for (const items::socket_plugs::Rule& rule : rules) {
@@ -31,6 +33,11 @@ valid_socket_plug_publication(std::span<const items::socket_plugs::Rule> rules,
         }
     }
     for (const items::socket_plugs::Member member : members) {
+        if (member >= items::count()) {
+            return false;
+        }
+    }
+    for (const items::socket_plugs::Member member : rollMembers) {
         if (member >= items::count()) {
             return false;
         }
@@ -48,13 +55,17 @@ bool socket_plug_rules_ready() noexcept {
 /** Publishes the complete exact socket relation in one persistence transaction. */
 bool publish_socket_plug_rules(std::span<const items::socket_plugs::Rule> rules,
                                std::span<const items::socket_plugs::Pool> pools,
-                               std::span<const items::socket_plugs::Member> members) noexcept {
+                               std::span<const items::socket_plugs::Member> members,
+                               std::span<const items::socket_plugs::Pool> rollPools,
+                               std::span<const items::socket_plugs::Member> rollMembers) noexcept {
     runtime::persistence::Transaction transaction;
-    if (!transaction.active() || !valid_socket_plug_publication(rules, pools, members)) {
+    if (!transaction.active()
+        || !valid_socket_plug_publication(rules, pools, members, rollPools, rollMembers)) {
         return false;
     }
-    return transaction.finish(items::socket_plugs::replace(rules, pools, members),
-                              items::socket_plugs::clear);
+    return transaction.finish(
+        items::socket_plugs::replace(rules, pools, members, rollPools, rollMembers),
+        items::socket_plugs::clear);
 }
 
 /** Answers one exact installed item/lane/plug compatibility query. */
@@ -72,6 +83,20 @@ bool visit_socket_plug_pool(std::uint16_t itemDefinitionIndex,
                             void* context) noexcept {
     return socket_plug_rules_ready()
            && items::socket_plugs::visit_pool(itemDefinitionIndex, lane, visitor, context);
+}
+
+/** Names the socket entry a rolled lane resolves through, or kNoSocketEntry when it has none. */
+std::uint8_t socket_entry_index(std::uint16_t itemDefinitionIndex, std::uint8_t lane) noexcept {
+    return items::socket_plugs::socket_entry_index(itemDefinitionIndex, lane);
+}
+
+/** Walks one lane's native-order randomized roll pool once the whole relation is in State. */
+bool visit_socket_roll_pool(std::uint16_t itemDefinitionIndex,
+                            std::uint8_t lane,
+                            items::socket_plugs::MemberVisitor visitor,
+                            void* context) noexcept {
+    return socket_plug_rules_ready()
+           && items::socket_plugs::visit_roll_pool(itemDefinitionIndex, lane, visitor, context);
 }
 
 /** Answers pool membership anywhere in the installed relation. */

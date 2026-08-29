@@ -35,6 +35,8 @@ valid_item_detail_links(std::span<const items::details::Definition> details,
 valid_socket_plug_links(std::span<const items::socket_plugs::Rule> rules,
                         std::span<const items::socket_plugs::Pool> pools,
                         std::span<const items::socket_plugs::Member> members,
+                        std::span<const items::socket_plugs::Pool> rollPools,
+                        std::span<const items::socket_plugs::Member> rollMembers,
                         std::span<const items::Definition> itemDefinitions,
                         std::span<const items::details::Definition> details) noexcept;
 

@@ -35,6 +35,18 @@ struct Definition {
     /** Item index of the plug this one stands for, or kUnavailableLinkedPlugIndex when it stands
      * alone. */
     std::uint16_t linkedPlugIndex{kUnavailableLinkedPlugIndex};
+    /**
+     * The definition's first investment-stat value, clamped into a byte. A masterwork stat plug
+     * declares its tier here (1..10); other plugs carry whatever their first stat says, which the
+     * roll only reads to detect a Tier-1 masterwork. Zero when the definition declares no stat.
+     */
+    std::uint8_t actionStatValue{};
+    /**
+     * Stat table row of the first investment stat, naming the stat the definition contributes
+     * to. A masterwork stat plug carries the stat it boosts here; a definition with no stat
+     * carries no row, which never matches a weapon stat.
+     */
+    std::uint8_t actionStatRow{};
 };
 
 /** Roll-set ordinals outside the rolled ladder. */

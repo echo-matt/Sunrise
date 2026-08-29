@@ -31,6 +31,8 @@ struct DomainCounts {
     std::size_t socketPlugRules{};
     std::size_t socketPlugPools{};
     std::size_t socketPlugMembers{};
+    std::size_t socketPlugRollPools{};
+    std::size_t socketPlugRollMembers{};
     std::size_t inventoryBuckets{};
     std::size_t socketEntryLists{};
     std::size_t socketEntryTables{};
@@ -60,6 +62,8 @@ struct MutableDomains {
     std::span<items::socket_plugs::Rule> socketPlugRules;
     std::span<items::socket_plugs::Pool> socketPlugPools;
     std::span<items::socket_plugs::Member> socketPlugMembers;
+    std::span<items::socket_plugs::Pool> socketPlugRollPools;
+    std::span<items::socket_plugs::Member> socketPlugRollMembers;
     std::span<inventory::buckets::Descriptor> inventoryBuckets;
     std::span<socket_entry_lists::Definition> socketEntryLists;
     std::span<socket_entry_lists::EntryTable> socketEntryTables;
@@ -88,6 +92,8 @@ struct Domains {
     std::span<const items::socket_plugs::Rule> socketPlugRules;
     std::span<const items::socket_plugs::Pool> socketPlugPools;
     std::span<const items::socket_plugs::Member> socketPlugMembers;
+    std::span<const items::socket_plugs::Pool> socketPlugRollPools;
+    std::span<const items::socket_plugs::Member> socketPlugRollMembers;
     std::span<const inventory::buckets::Descriptor> inventoryBuckets;
     std::span<const socket_entry_lists::Definition> socketEntryLists;
     std::span<const socket_entry_lists::EntryTable> socketEntryTables;

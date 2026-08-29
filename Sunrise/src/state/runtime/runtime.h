@@ -324,11 +324,16 @@ void shutdown() noexcept;
  * @param collectibleIndex Collections row the Client pulled from.
  * @param definitionHash Installed item definition requested by the Client.
  * @param mutation Gets a checked after-image without changing account State.
+ * @param allowRandomRoll Rolls the ordinary socket lanes of an acquired character weapon instead
+ * of keeping the curated initial plugs. Only a weapon ever rolls; armour, cosmetics and every
+ * profile-owned row keep their definition's plugs whatever this says. Pass false to hand out one
+ * exact curated roll.
  * @return True when the item and every existing loadout row resolve with one free native row.
  */
 [[nodiscard]] bool prepare_item_acquisition(std::uint16_t collectibleIndex,
                                             std::uint32_t definitionHash,
-                                            PendingItemAcquisition& mutation) noexcept;
+                                            PendingItemAcquisition& mutation,
+                                            bool allowRandomRoll = true) noexcept;
 
 /** Builds the exact full-account after-image while a prepared item pull remains current. */
 [[nodiscard]] bool preview_item_acquisition(const PendingItemAcquisition& mutation,

@@ -33,6 +33,8 @@ enum class EquipmentSlot : std::uint8_t {
 inline constexpr std::size_t kEquipmentSlotCount = static_cast<std::size_t>(EquipmentSlot::count);
 /** An authored item can pick at most 12 ordinary socket lanes. */
 inline constexpr std::size_t kPlugCapacity = 12;
+/** An item instance carries 8 native random-roll bytes. */
+inline constexpr std::size_t kRandomRollCapacity = 8;
 /** The engine no-definition hash cannot identify an authored item or plug. */
 inline constexpr std::uint32_t kNoDefinitionHash = 0x811C9DC5U;
 
@@ -92,6 +94,36 @@ struct Item {
     /** Native accumulated item-state bits such as the finisher favorite marker. */
     std::uint32_t flags{};
     Sockets sockets;
+    /**
+     * Per-instance entropy the Client reduces to pick a plug for every socket whose plug set is
+     * randomized: it takes one of these bytes, chosen by the socket entry's own selector byte,
+     * modulo the plug set's row count. All-zero therefore pins every randomized socket to its
+     * first plug, which is what a curated Collections pull wants.
+     */
+    std::array<std::uint8_t, kRandomRollCapacity> randomRoll{};
+    /**
+     * Bit per ordinary socket lane this instance had rolled rather than authored from its
+     * definition. A rolled plug is drawn from the socket's randomized set, which the definition's
+     * allowed pool never carries, so the socket route offers a rolled lane the rows named by
+     * availablePlugRows on top of that pool. That is what lets a rolled lane be swapped to a
+     * curated choice and back to the rolled plug, matching what the inspection grid offers.
+     */
+    std::uint16_t rolledLaneMask{};
+    /**
+     * Per-lane bitmask of the rows of that socket's randomized plug set this instance owns, one
+     * bit per row in the lane's published pool order. A rolled lane sets the single bit naming
+     * the pool row it carries; a lane left zero only ever shows its definition's curated choice.
+     * The Client walks these bits before it falls back to the definition's own plugs, so this is
+     * what keeps the hover preview on the same perk the inspection screen reads.
+     */
+    std::array<std::uint64_t, kPlugCapacity> availablePlugRows{};
+    /**
+     * Per-lane 1-based randomized-set row this instance pinned onto the socket entry that backs
+     * the lane (matched by roll-pool reference). Zero means the lane did not pin a state. Keeping
+     * the row on the item lets the loadout fold it into the instance's socket-entry states, which
+     * is what makes the hover preview resolve the exact rolled perk the inspection screen shows.
+     */
+    std::array<std::uint8_t, kPlugCapacity> rollRowByLane{};
     /**
      * Selected ability-node socket entries. Only meaningful on a subclass. Kept on the item, not
      * the character, so each owned subclass remembers its own picks. Defaults match

@@ -365,7 +365,8 @@ bool visit_allowed_plugs(std::span<const std::byte> definition,
                          std::span<const std::byte> plugSetTable,
                          std::uint8_t lane,
                          AllowedPlugVisitor visitor,
-                         void* context) noexcept {
+                         void* context,
+                         bool includeRandomizedSet) noexcept {
     if (visitor == nullptr || lane >= kSocketCapacity) {
         return false;
     }
@@ -399,20 +400,98 @@ bool visit_allowed_plugs(std::span<const std::byte> definition,
                 || !visit_plug_array(definition, embedded, visitor, context)))) {
         return false;
     }
-    return visit_shared_plug_set(definition,
-                                 socketEntry,
-                                 kReusablePlugSetIndexOffset,
-                                 plugSetTable,
-                                 sets,
-                                 visitor,
-                                 context)
-           && visit_shared_plug_set(definition,
+    if (!visit_shared_plug_set(definition,
+                               socketEntry,
+                               kReusablePlugSetIndexOffset,
+                               plugSetTable,
+                               sets,
+                               visitor,
+                               context)) {
+        return false;
+    }
+    return !includeRandomizedSet
+           || visit_shared_plug_set(definition,
                                     socketEntry,
                                     kRandomizedPlugSetIndexOffset,
                                     plugSetTable,
                                     sets,
                                     visitor,
                                     context);
+}
+
+/**
+ * Visits exactly the randomized draw pool one ordinary socket lane declares.
+ *
+ * The Client resolves a randomized roll by `randomRoll[selectorByte] % count` against this one
+ * set (and never offers its members for insertion), so Sunrise authors the instance plug straight
+ * out of the native row order kept here.
+ * @return True when the lane's randomized set is structurally valid and fully visited.
+ */
+bool visit_roll_plugs(std::span<const std::byte> definition,
+                      std::span<const std::byte> plugSetTable,
+                      std::uint8_t lane,
+                      AllowedPlugVisitor visitor,
+                      void* context) noexcept {
+    if (visitor == nullptr || lane >= kSocketCapacity) {
+        return false;
+    }
+    std::int64_t socketBlockRelative = 0;
+    if (!read(definition, kSocketBlockOffset, socketBlockRelative) || socketBlockRelative == 0) {
+        return false;
+    }
+    const std::int64_t socketBlock =
+        static_cast<std::int64_t>(kSocketBlockOffset) + socketBlockRelative;
+    if (socketBlock < 0 || static_cast<std::uint64_t>(socketBlock) >= definition.size()) {
+        return false;
+    }
+    Array sockets{};
+    if (!find_array_at(definition, static_cast<std::size_t>(socketBlock), sockets)
+        || sockets.elementClass != kOrdinarySocketClass || lane >= sockets.count
+        || sockets.dataOffset > definition.size()
+        || sockets.count > (definition.size() - sockets.dataOffset) / kSocketEntryStride) {
+        return false;
+    }
+    Array sets{};
+    if (!find_array_at(plugSetTable, kTableArrayDescriptor, sets)) {
+        return false;
+    }
+    const std::size_t socketEntry =
+        sockets.dataOffset + static_cast<std::size_t>(lane) * kSocketEntryStride;
+    return visit_shared_plug_set(definition,
+                                 socketEntry,
+                                 kRandomizedPlugSetIndexOffset,
+                                 plugSetTable,
+                                 sets,
+                                 visitor,
+                                 context);
+}
+
+bool read_roll_set_index(std::span<const std::byte> definition,
+                         std::uint8_t lane,
+                         std::uint16_t& setIndex) noexcept {
+    setIndex = kUnavailablePlug;
+    if (lane >= kSocketCapacity) {
+        return false;
+    }
+    std::int64_t socketBlockRelative = 0;
+    if (!read(definition, kSocketBlockOffset, socketBlockRelative) || socketBlockRelative == 0) {
+        return false;
+    }
+    const std::int64_t socketBlock =
+        static_cast<std::int64_t>(kSocketBlockOffset) + socketBlockRelative;
+    if (socketBlock < 0 || static_cast<std::uint64_t>(socketBlock) >= definition.size()) {
+        return false;
+    }
+    Array sockets{};
+    if (!find_array_at(definition, static_cast<std::size_t>(socketBlock), sockets)
+        || sockets.elementClass != kOrdinarySocketClass || lane >= sockets.count
+        || sockets.dataOffset > definition.size()
+        || sockets.count > (definition.size() - sockets.dataOffset) / kSocketEntryStride) {
+        return false;
+    }
+    const std::size_t socketEntry =
+        sockets.dataOffset + static_cast<std::size_t>(lane) * kSocketEntryStride;
+    return read(definition, socketEntry + kRandomizedPlugSetIndexOffset, setIndex);
 }
 
 } // namespace sunrise::middleware::content::packages::tables::items

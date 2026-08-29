@@ -70,6 +70,67 @@ void report_socket_plug(std::string_view stage,
     }
 }
 
+/** Rows of a lane's randomized set the owned-row mask can name, one bit per row. */
+inline constexpr std::size_t kRollRowCapacity = 64;
+/** Stands for "this plug is not a member of the lane's randomized set". */
+inline constexpr std::size_t kNoRollRow = std::numeric_limits<std::size_t>::max();
+
+/** Walks one lane's randomized set in native order, keeping the row one exact plug sits on. */
+struct RollRowScan {
+    std::uint16_t plugDefinitionIndex{};
+    std::size_t row{};
+    std::size_t found{kNoRollRow};
+};
+
+/** Counts one native-order randomized member, recording the row when it names the wanted plug. */
+[[nodiscard]] bool match_roll_row(void* context, std::uint16_t plugDefinitionIndex) noexcept {
+    auto* scan = static_cast<RollRowScan*>(context);
+    if (scan->found == kNoRollRow && plugDefinitionIndex == scan->plugDefinitionIndex) {
+        scan->found = scan->row;
+    }
+    ++scan->row;
+    return true;
+}
+
+/**
+ * Finds the native-order row one plug occupies in one lane's randomized set.
+ * @return The row, or kNoRollRow when the lane has no roll pool or the plug is not in it.
+ */
+[[nodiscard]] std::size_t roll_row_of(std::uint16_t itemDefinitionIndex,
+                                      std::uint8_t lane,
+                                      std::uint16_t plugDefinitionIndex) noexcept {
+    RollRowScan scan{plugDefinitionIndex, 0, kNoRollRow};
+    if (!build_data::visit_socket_roll_pool(itemDefinitionIndex, lane, &match_roll_row, &scan)) {
+        return kNoRollRow;
+    }
+    return scan.found;
+}
+
+/**
+ * Answers whether one lane owns the randomized-set row one plug sits on. A rolled lane's owned
+ * rows are the only route back to the rolled plug: the randomized set is not in the allowed pool.
+ */
+[[nodiscard]] bool owns_roll_row(const authored_inventory::Item& item,
+                                 std::uint16_t itemDefinitionIndex,
+                                 std::uint8_t lane,
+                                 std::uint16_t plugDefinitionIndex) noexcept {
+    if (lane >= item.availablePlugRows.size()
+        || (item.rolledLaneMask & static_cast<std::uint16_t>(1U << lane)) == 0) {
+        return false;
+    }
+    const std::size_t row = roll_row_of(itemDefinitionIndex, lane, plugDefinitionIndex);
+    return row < kRollRowCapacity
+           && (item.availablePlugRows[lane] & (std::uint64_t{1} << row)) != 0;
+}
+
+bool plug_offered_in_lane(const authored_inventory::Item& item,
+                          std::uint16_t itemDefinitionIndex,
+                          std::uint8_t lane,
+                          std::uint16_t plugDefinitionIndex) noexcept {
+    return build_data::is_socket_plug_allowed(itemDefinitionIndex, lane, plugDefinitionIndex)
+           || owns_roll_row(item, itemDefinitionIndex, lane, plugDefinitionIndex);
+}
+
 /** Materializes native initial plugs as a complete authored socket block. */
 [[nodiscard]] bool materialize_native_sockets(const item_details::Definition& detail,
                                               authored_inventory::Sockets& sockets) noexcept {
@@ -154,10 +215,19 @@ void report_socket_plug(std::string_view stage,
         || detail.ordinarySocketCount > authored_inventory::kPlugCapacity
         || !build_data::find_item_definition_index(plugDefinitionIndex, plugDefinition)
         || plugDefinition.definitionIndex != plugDefinitionIndex
-        || plugDefinition.definitionHash == authored_inventory::kNoDefinitionHash
-        || !build_data::is_socket_plug_allowed(
-            targetDefinition.definitionIndex, socketLane, plugDefinitionIndex)) {
+        || plugDefinition.definitionHash == authored_inventory::kNoDefinitionHash) {
         return fail("definition_or_compatibility");
+    }
+
+    // What a lane offers is the curated allowed pool plus, on a rolled lane, the randomized-set
+    // rows this instance owns -- the same two sources the Client's inspection grid walks. Taking
+    // the owned rows keeps the roll reversible: the rolled plug is never in the allowed pool, so
+    // its owned row is the only way back to it after a curated plug is put in its place.
+    const bool rolledLane =
+        (target->rolledLaneMask & static_cast<std::uint16_t>(1U << socketLane)) != 0;
+    if (!plug_offered_in_lane(
+            *target, targetDefinition.definitionIndex, socketLane, plugDefinitionIndex)) {
+        return fail("plug_not_offered");
     }
 
     // Ownership only matters where the plug is a finite supply the account draws down. A shader is
@@ -290,6 +360,18 @@ void report_socket_plug(std::string_view stage,
         return fail("target_copy");
     }
     changed->sockets = authoredSockets;
+    if (rolledLane) {
+        // The lane's pinned socket-entry state names the randomized-set row the hover preview
+        // resolves through, so it must follow the plug that just landed or hover keeps showing
+        // the rolled perk the inspection grid no longer reads. A plug outside the randomized set
+        // has no row to pin: the lane unpins and the entry falls back to its definition state.
+        const std::size_t grantedRollRow = roll_row_of(
+            targetDefinition.definitionIndex, socketLane, grantedDefinition.definitionIndex);
+        changed->rollRowByLane[socketLane] =
+            grantedRollRow < std::numeric_limits<std::uint8_t>::max()
+                ? static_cast<std::uint8_t>(grantedRollRow + 1U)
+                : std::uint8_t{0};
+    }
 
     AccountState candidate = chargedAccount;
     candidate.characters[characterIndex] = after;

@@ -65,12 +65,18 @@ bool encode(const items::Definition& value, ItemRecord& record) noexcept {
         value.plugCategoryHash,
         value.rollSetIndex,
         value.linkedPlugIndex,
+        value.actionStatValue,
+        value.actionStatRow,
+        0,
     };
     return true;
 }
 
-/** Decodes one installed-build item mapping. */
+/** Decodes one installed-build item mapping after checking its reserved byte. */
 bool decode(const ItemRecord& record, items::Definition& value) noexcept {
+    if (record.reserved != kReservedFieldValue) {
+        return false;
+    }
     value = {record.definitionHash,
              record.definitionIndex,
              record.bucketId,
@@ -79,7 +85,9 @@ bool decode(const ItemRecord& record, items::Definition& value) noexcept {
              record.tier,
              record.plugCategoryHash,
              record.rollSetIndex,
-             record.linkedPlugIndex};
+             record.linkedPlugIndex,
+             record.actionStatValue,
+             record.actionStatRow};
     return true;
 }
 

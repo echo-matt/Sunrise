@@ -104,8 +104,11 @@ bool initialize(void* module, std::uint64_t configuredEquipmentHash) noexcept {
         // The per-entry tables are what the subclass selection reads. Without them a cache hit
         // makes the lists ready, the package build skips itself, and no ability is picked.
         || !socket_entry_lists::replace_entry_tables(domains.socketEntryTables) || !detailsReplaced
-        || !items::socket_plugs::replace(
-            domains.socketPlugRules, domains.socketPlugPools, domains.socketPlugMembers)
+        || !items::socket_plugs::replace(domains.socketPlugRules,
+                                         domains.socketPlugPools,
+                                         domains.socketPlugMembers,
+                                         domains.socketPlugRollPools,
+                                         domains.socketPlugRollMembers)
         || !abilities::replace(domains.abilityBuckets)
         || !progressions::replace(domains.progressions)
         // The layouts are what activity message 1 reads. Without them a cache hit makes the

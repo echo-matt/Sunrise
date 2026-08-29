@@ -74,6 +74,12 @@ void clear(records::MutableDomains output) noexcept {
     std::fill(output.socketPlugMembers.begin(),
               output.socketPlugMembers.end(),
               items::socket_plugs::Member{});
+    std::fill(output.socketPlugRollPools.begin(),
+              output.socketPlugRollPools.end(),
+              items::socket_plugs::Pool{});
+    std::fill(output.socketPlugRollMembers.begin(),
+              output.socketPlugRollMembers.end(),
+              items::socket_plugs::Member{});
     std::fill(output.inventoryBuckets.begin(),
               output.inventoryBuckets.end(),
               inventory::buckets::Descriptor{});
@@ -112,6 +118,10 @@ bool expected_size(const records::DomainCounts& counts, std::uint64_t& size) noe
            && add_records(counts.socketPlugRules, sizeof(records::SocketPlugRuleRecord), size)
            && add_records(counts.socketPlugPools, sizeof(records::SocketPlugPoolRecord), size)
            && add_records(counts.socketPlugMembers, sizeof(records::SocketPlugMemberRecord), size)
+           && add_records(
+               counts.socketPlugRollPools, sizeof(records::SocketPlugRollPoolRecord), size)
+           && add_records(
+               counts.socketPlugRollMembers, sizeof(records::SocketPlugRollMemberRecord), size)
            && add_records(counts.inventoryBuckets, sizeof(records::InventoryBucketRecord), size)
            && add_records(counts.socketEntryLists, sizeof(records::SocketEntryListRecord), size)
            && add_records(counts.socketEntryTables, sizeof(records::SocketEntryTableRecord), size)
@@ -160,6 +170,12 @@ bool read_payload(HANDLE file,
     valid = valid
             && read_domain<records::SocketPlugMemberRecord>(
                 file, output.socketPlugMembers.first(counts.socketPlugMembers), checksum);
+    valid = valid
+            && read_domain<records::SocketPlugRollPoolRecord>(
+                file, output.socketPlugRollPools.first(counts.socketPlugRollPools), checksum);
+    valid = valid
+            && read_domain<records::SocketPlugRollMemberRecord>(
+                file, output.socketPlugRollMembers.first(counts.socketPlugRollMembers), checksum);
     valid = valid
             && read_domain<records::InventoryBucketRecord>(
                 file, output.inventoryBuckets.first(counts.inventoryBuckets), checksum);
@@ -218,6 +234,8 @@ bool read_payload(HANDLE file,
         output.socketPlugRules.first(counts.socketPlugRules),
         output.socketPlugPools.first(counts.socketPlugPools),
         output.socketPlugMembers.first(counts.socketPlugMembers),
+        output.socketPlugRollPools.first(counts.socketPlugRollPools),
+        output.socketPlugRollMembers.first(counts.socketPlugRollMembers),
         output.inventoryBuckets.first(counts.inventoryBuckets),
         output.socketEntryLists.first(counts.socketEntryLists),
         output.socketEntryTables.first(counts.socketEntryTables),

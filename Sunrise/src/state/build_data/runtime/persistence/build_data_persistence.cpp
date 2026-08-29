@@ -74,7 +74,11 @@ to_record(const constants::InvestmentConstants& value) noexcept {
                                             scratch.socketPlugPools,
                                             counts.socketPlugPools,
                                             scratch.socketPlugMembers,
-                                            counts.socketPlugMembers)
+                                            counts.socketPlugMembers,
+                                            scratch.socketPlugRollPools,
+                                            counts.socketPlugRollPools,
+                                            scratch.socketPlugRollMembers,
+                                            counts.socketPlugRollMembers)
            && inventory::buckets::snapshot(scratch.inventoryBuckets, counts.inventoryBuckets)
            && socket_entry_lists::snapshot(scratch.socketEntryLists, counts.socketEntryLists)
            && socket_entry_lists::snapshot_entry_tables(scratch.socketEntryTables,
@@ -138,6 +142,14 @@ cache::records::MutableDomains scratch_domains(Context& state) noexcept {
     const auto socketPlugMembers = ensure_scratch<build_data::items::socket_plugs::Member,
                                                   build_data::items::socket_plugs::kMemberCapacity>(
         state.socketPlugMemberScratch);
+    const auto socketPlugRollPools =
+        ensure_scratch<build_data::items::socket_plugs::Pool,
+                       build_data::items::socket_plugs::kRollPoolCapacity>(
+            state.socketPlugRollPoolScratch);
+    const auto socketPlugRollMembers =
+        ensure_scratch<build_data::items::socket_plugs::Member,
+                       build_data::items::socket_plugs::kRollMemberCapacity>(
+            state.socketPlugRollMemberScratch);
     const auto inventoryBuckets =
         ensure_scratch<inventory::buckets::Descriptor, inventory::buckets::kDescriptorCapacity>(
             state.inventoryBucketScratch);
@@ -187,6 +199,8 @@ cache::records::MutableDomains scratch_domains(Context& state) noexcept {
         socketPlugRules,
         socketPlugPools,
         socketPlugMembers,
+        socketPlugRollPools,
+        socketPlugRollMembers,
         inventoryBuckets,
         socketEntryLists,
         socketEntryTables,
@@ -224,6 +238,8 @@ void release_scratch_locked(Context& state) noexcept {
     release_bank(state.socketPlugRuleScratch);
     release_bank(state.socketPlugPoolScratch);
     release_bank(state.socketPlugMemberScratch);
+    release_bank(state.socketPlugRollPoolScratch);
+    release_bank(state.socketPlugRollMemberScratch);
     release_bank(state.inventoryBucketScratch);
     release_bank(state.socketEntryListScratch);
     release_bank(state.socketEntryTableScratch);
@@ -264,6 +280,10 @@ cache::records::Domains occupied_domains(Context& state,
         state.socketPlugPoolScratch.data(), counts.socketPlugPools};
     const std::span<const items::socket_plugs::Member> socketPlugMembers{
         state.socketPlugMemberScratch.data(), counts.socketPlugMembers};
+    const std::span<const items::socket_plugs::Pool> socketPlugRollPools{
+        state.socketPlugRollPoolScratch.data(), counts.socketPlugRollPools};
+    const std::span<const items::socket_plugs::Member> socketPlugRollMembers{
+        state.socketPlugRollMemberScratch.data(), counts.socketPlugRollMembers};
     return {
         state.constantsScratch,
         std::span<const content::Definition>{state.namedScratch.data(), counts.named},
@@ -276,6 +296,8 @@ cache::records::Domains occupied_domains(Context& state,
         socketPlugRules,
         socketPlugPools,
         socketPlugMembers,
+        socketPlugRollPools,
+        socketPlugRollMembers,
         std::span<const inventory::buckets::Descriptor>{state.inventoryBucketScratch.data(),
                                                         counts.inventoryBuckets},
         std::span<const socket_entry_lists::Definition>{state.socketEntryListScratch.data(),

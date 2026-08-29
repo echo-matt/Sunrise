@@ -82,10 +82,12 @@ bool valid_item_detail_links(
 bool valid_socket_plug_links(std::span<const items::socket_plugs::Rule> rules,
                              std::span<const items::socket_plugs::Pool> pools,
                              std::span<const items::socket_plugs::Member> members,
+                             std::span<const items::socket_plugs::Pool> rollPools,
+                             std::span<const items::socket_plugs::Member> rollMembers,
                              std::span<const items::Definition> itemDefinitions,
                              std::span<const items::details::Definition> details) noexcept {
     if (itemDefinitions.empty() || details.empty()
-        || !items::socket_plugs::valid(rules, pools, members)) {
+        || !items::socket_plugs::valid(rules, pools, members, rollPools, rollMembers)) {
         return false;
     }
     for (const items::socket_plugs::Rule& rule : rules) {
@@ -104,9 +106,14 @@ bool valid_socket_plug_links(std::span<const items::socket_plugs::Rule> rules,
             return false;
         }
     }
-    return std::all_of(members.begin(), members.end(), [&itemDefinitions](const auto member) {
-        return member < itemDefinitions.size();
-    });
+    return std::all_of(
+               members.begin(),
+               members.end(),
+               [&itemDefinitions](const auto member) { return member < itemDefinitions.size(); })
+           && std::all_of(
+               rollMembers.begin(), rollMembers.end(), [&itemDefinitions](const auto member) {
+                   return member < itemDefinitions.size();
+               });
 }
 
 } // namespace sunrise::state::build_data::cache::records

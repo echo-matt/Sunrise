@@ -140,15 +140,31 @@ bool prepare_character_selector_socket_plug(std::uint64_t instanceIdentityToken,
         // Most action kinds are the physical ordinary-socket lane. Prefer that exact lane when
         // its pool accepts the plug, which disambiguates armour with two mod sockets on one pool.
         // Some kinds are semantic instead (shaders), so keep the unique-compatible-lane fallback.
+        // The lane test is the instance's offer rule, not the definition's pool alone: a rolled
+        // lane also offers the randomized-set rows the instance owns. Testing the pool alone
+        // resolves no lane for the plug a rolled lane started with, so the roll could be swapped
+        // away and never chosen again.
+        CharacterItemLocation targetLocation{};
+        const authored_inventory::Item* targetItem =
+            find_character_item_location(snapshot.characters[characterIndex],
+                                         resolvedTarget->instance.instanceSoid,
+                                         targetLocation)
+                ? character_item_at(snapshot.characters[characterIndex], targetLocation)
+                : nullptr;
+        const authored_inventory::Item probe{};
+        const authored_inventory::Item& offerItem = targetItem != nullptr ? *targetItem : probe;
         if (requestedSocketLane < targetDetail.ordinarySocketCount
-            && build_data::is_socket_plug_allowed(
-                targetDefinition.definitionIndex, requestedSocketLane, plugDefinitionIndex)) {
+            && plug_offered_in_lane(offerItem,
+                                    targetDefinition.definitionIndex,
+                                    requestedSocketLane,
+                                    plugDefinitionIndex)) {
             resolvedSocketLane = requestedSocketLane;
         } else {
             for (std::size_t lane = 0; lane < targetDetail.ordinarySocketCount; ++lane) {
-                if (!build_data::is_socket_plug_allowed(targetDefinition.definitionIndex,
-                                                        static_cast<std::uint8_t>(lane),
-                                                        plugDefinitionIndex)) {
+                if (!plug_offered_in_lane(offerItem,
+                                          targetDefinition.definitionIndex,
+                                          static_cast<std::uint8_t>(lane),
+                                          plugDefinitionIndex)) {
                     continue;
                 }
                 if (resolvedSocketLane < authored_inventory::kPlugCapacity) {

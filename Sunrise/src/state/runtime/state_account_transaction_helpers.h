@@ -134,6 +134,16 @@ find_resolved_position(const middleware::datagen::family4::loadout::ResolvedLoad
     std::size_t& movedItemCount) noexcept;
 [[nodiscard]] bool same_character(const CharacterState& left, const CharacterState& right) noexcept;
 /**
+ * Answers whether one exact ordinary socket lane of one instance offers one plug for insertion:
+ * the definition's curated allowed pool, plus the randomized-set rows the instance owns on a
+ * rolled lane. This is the single rule both the lane resolution and the staging apply, so a plug
+ * the inspection grid shows never resolves to no lane.
+ */
+[[nodiscard]] bool plug_offered_in_lane(const account::inventory::Item& item,
+                                        std::uint16_t itemDefinitionIndex,
+                                        std::uint8_t lane,
+                                        std::uint16_t plugDefinitionIndex) noexcept;
+/**
  * @param pinnedPlugHash For a rolled socket's apply or re-roll, the result plug an earlier
  *        staging rolled, so a re-staging reproduces the same after-image; 0 rolls afresh.
  */

@@ -106,12 +106,41 @@ using AllowedPlugVisitor = bool (*)(void* context, std::uint32_t itemDefinitionI
  * @param lane Ordinary socket lane to inspect.
  * @param visitor Required bounded consumer.
  * @param context Opaque consumer state.
+ * @param includeRandomizedSet Whether the socket's randomized draw pool joins the walk. A socket
+ * offers its embedded and reusable plugs for insertion; the randomized set is what a roll is
+ * drawn from and is never offered, so a plug taken from it can be socketed but never selected
+ * again once something else replaces it.
  * @return True when every referenced array is structurally valid and accepted by the visitor.
  */
 [[nodiscard]] bool visit_allowed_plugs(std::span<const std::byte> definition,
                                        std::span<const std::byte> plugSetTable,
                                        std::uint8_t lane,
                                        AllowedPlugVisitor visitor,
-                                       void* context) noexcept;
+                                       void* context,
+                                       bool includeRandomizedSet = true) noexcept;
+
+/**
+ * Visits exactly the randomized draw pool one ordinary socket lane declares.
+ *
+ * Sunrise authors a random-rolled instance plug straight out of this set's native row order,
+ * matching `randomRoll[selectorByte] % count` against the same rows the Client resolves.
+ * @return True when the lane's randomized set is structurally valid and fully visited.
+ */
+[[nodiscard]] bool visit_roll_plugs(std::span<const std::byte> definition,
+                                    std::span<const std::byte> plugSetTable,
+                                    std::uint8_t lane,
+                                    AllowedPlugVisitor visitor,
+                                    void* context) noexcept;
+
+/**
+ * Reads the native randomized-set index one ordinary socket lane declares.
+ * This is the same set a socket entry with an equal plug-set reference rolls from, which is how
+ * a rolled lane is matched to the socket entry the hover preview resolves through.
+ * @param setIndex Receives the lane's randomized-set index, or kUnavailablePlug when absent.
+ * @return True when the lane shares the socket block and carries a randomized set.
+ */
+[[nodiscard]] bool read_roll_set_index(std::span<const std::byte> definition,
+                                       std::uint8_t lane,
+                                       std::uint16_t& setIndex) noexcept;
 
 } // namespace sunrise::middleware::content::packages::tables::items
