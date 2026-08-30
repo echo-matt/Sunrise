@@ -1,8 +1,11 @@
 #include "instance_encoder.h"
 
 #include <algorithm>
+#include <array>
+#include <cstdio>
 #include <cstring>
 
+#include "../../../../core/logging/log.h"
 #include "abi.h"
 #include "layout.h"
 
@@ -140,19 +143,40 @@ bool encode(const ResolvedInstance& input, std::span<std::byte> output) noexcept
     object.ordinarySockets.gateMask = layout::kAllSocketBits;
     object.roll.progress = layout::kInitialInstanceProgress;
     object.roll.socketEntryListIndex = input.socketEntryListIndex;
+    object.roll.randomRoll = input.randomRoll;
 
     if (input.ordinarySockets.state == OrdinarySocketBlockState::present) {
-        // Both permit masks are filled. The plug walk reads the definition's declared plugs as
-        // well as this instance's lanes, and skips whichever source its mask leaves unset.
+        // Both permit masks govern whether the UI socket walk reads the definition's declared plugs
+        // or this instance's dynamic ordinary sockets.
+        // Under filter 1 (sub_7FF7B6E06D10), bit test on expressionUnlockMask rejects kind 1 when
+        // set. Under filter 2 (sub_7FF7B6E06BD0), bit test on definitionUnlockMask passes kind 1
+        // when set. Lane 0 (intrinsic/embedded) keeps expressionUnlockMask cleared and
+        // definitionUnlockMask set, so the intrinsic is emitted in pass 1 and skipped in pass 2
+        // (embeddedCount > 0). Dynamic perk lanes (index > 0) clear definitionUnlockMask and set
+        // expressionUnlockMask, suppressing definition default plugs in pass 1 so pass 2 yields the
+        // rolled instance plugs.
         object.ordinarySockets.activeMask = layout::kAllSocketBits;
         object.ordinarySockets.definitionUnlockMask = layout::kAllSocketBits;
+        object.ordinarySockets.expressionUnlockMask = 0;
         for (std::size_t index = 0; index < input.ordinarySockets.plugs.size(); ++index) {
             const std::optional<std::uint16_t>& plug = input.ordinarySockets.plugs[index];
             if (plug.has_value()) {
                 object.ordinarySockets.sockets[index].plugDefinitionIndex = *plug;
+                if (index > 0) {
+                    object.ordinarySockets.definitionUnlockMask &= ~(1U << index);
+                    object.ordinarySockets.expressionUnlockMask |= (1U << index);
+                }
             }
+            // The two lanes the native record calls auxiliary hashes are one 64-bit mask of the
+            // randomized plug-set rows this instance owns, low half first.
+            const std::uint64_t rows = input.ordinarySockets.availablePlugRows[index];
+            object.ordinarySockets.sockets[index].auxiliaryHashes[0] =
+                static_cast<std::uint32_t>(rows & 0xFFFFFFFFULL);
+            object.ordinarySockets.sockets[index].auxiliaryHashes[1] =
+                static_cast<std::uint32_t>(rows >> 32U);
         }
     }
+
     std::transform(input.socketEntryStates.begin(),
                    input.socketEntryStates.end(),
                    object.roll.socketEntryStates.begin(),
@@ -170,6 +194,21 @@ bool encode(const ResolvedInstance& input, std::span<std::byte> output) noexcept
     // Commit only after validation so a rejected mapping leaves caller-owned storage unchanged.
     std::fill(output.begin(), output.end(), std::byte{});
     std::memcpy(output.data(), &object, sizeof object);
+
+    std::array<char, core::log::kLineCapacity> line{};
+    const int count = std::snprintf(line.data(),
+                                    line.size(),
+                                    "ev=encode_instance soid=0x%llX base_def=%u def_mask=0x%08X "
+                                    "expr_mask=0x%08X",
+                                    static_cast<unsigned long long>(input.instanceSoid),
+                                    input.baseDefinitionIndex,
+                                    object.ordinarySockets.definitionUnlockMask,
+                                    object.ordinarySockets.expressionUnlockMask);
+    if (count > 0) {
+        core::log::write(core::log::Channel::server,
+                         core::log::Level::debug,
+                         {line.data(), static_cast<std::size_t>(count)});
+    }
     return true;
 }
 

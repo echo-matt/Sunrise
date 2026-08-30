@@ -37,6 +37,8 @@ struct Context {
     std::vector<items::socket_plugs::Rule> socketPlugRuleScratch{};
     std::vector<items::socket_plugs::Pool> socketPlugPoolScratch{};
     std::vector<items::socket_plugs::Member> socketPlugMemberScratch{};
+    std::vector<items::socket_plugs::Pool> socketPlugRollPoolScratch{};
+    std::vector<items::socket_plugs::Member> socketPlugRollMemberScratch{};
     std::vector<inventory::buckets::Descriptor> inventoryBucketScratch{};
     std::vector<socket_entry_lists::Definition> socketEntryListScratch{};
     std::vector<socket_entry_lists::EntryTable> socketEntryTableScratch{};

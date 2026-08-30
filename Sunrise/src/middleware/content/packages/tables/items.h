@@ -106,12 +106,30 @@ using AllowedPlugVisitor = bool (*)(void* context, std::uint32_t itemDefinitionI
  * @param lane Ordinary socket lane to inspect.
  * @param visitor Required bounded consumer.
  * @param context Opaque consumer state.
+ * @param includeRandomizedSet Whether the socket's randomized draw pool joins the walk. A socket
+ * offers its embedded and reusable plugs for insertion; the randomized set is what a roll is
+ * drawn from and is not part of this curated relation. A rolled instance separately publishes its
+ * owned randomized rows, which is what keeps its selected plug reachable after a curated swap.
  * @return True when every referenced array is structurally valid and accepted by the visitor.
  */
 [[nodiscard]] bool visit_allowed_plugs(std::span<const std::byte> definition,
                                        std::span<const std::byte> plugSetTable,
                                        std::uint8_t lane,
                                        AllowedPlugVisitor visitor,
-                                       void* context) noexcept;
+                                       void* context,
+                                       bool includeRandomizedSet = true) noexcept;
+
+/**
+ * Visits exactly the randomized draw pool one ordinary socket lane declares.
+ *
+ * Sunrise authors a random-rolled instance plug straight out of this set's native row order,
+ * matching `randomRoll[selectorByte] % count` against the same rows the Client resolves.
+ * @return True when the lane's randomized set is structurally valid and fully visited.
+ */
+[[nodiscard]] bool visit_roll_plugs(std::span<const std::byte> definition,
+                                    std::span<const std::byte> plugSetTable,
+                                    std::uint8_t lane,
+                                    AllowedPlugVisitor visitor,
+                                    void* context) noexcept;
 
 } // namespace sunrise::middleware::content::packages::tables::items

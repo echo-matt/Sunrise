@@ -172,6 +172,10 @@ bool resolve_item(const authored_inventory::Item& authored,
     candidate.item.instance.level = authored.level;
     candidate.item.instance.curveSelector = instance::layout::kInitialLevelCurveX;
     candidate.item.instance.capSelector = instance::layout::kInitialLevelCapRow;
+    candidate.item.instance.randomRoll = authored.randomRoll;
+    // The owned-row masks are instance state, not definition data; carry them so the encoded
+    // record tells the Client which randomized-set rows this instance owns.
+    candidate.item.instance.ordinarySockets.availablePlugRows = authored.availablePlugRows;
     candidate.item.instance.socketEntryListIndex = socketList.definitionIndex;
     candidate.item.instance.socketEntryCount = socketList.entryCount;
     candidate.item.instance.socketEntryContentsResolved = true;

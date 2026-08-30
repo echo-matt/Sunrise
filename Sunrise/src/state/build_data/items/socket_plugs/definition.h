@@ -17,6 +17,12 @@ inline constexpr std::size_t kPoolCapacity = kRuleCapacity + 1;
 inline constexpr std::size_t kMemberCapacity = 1U << 22U;
 /** Pool zero is always the canonical empty pool. */
 inline constexpr std::uint32_t kEmptyPoolIndex = 0;
+/** Roll-pool zero is the canonical empty native-order roll pool. */
+inline constexpr std::uint32_t kEmptyRollPoolIndex = 0;
+/** At most one native-order roll pool is retained per installed rule. */
+inline constexpr std::size_t kRollPoolCapacity = kRuleCapacity + 1;
+/** Four million 16-bit roll members bound the native-order relation. */
+inline constexpr std::size_t kRollMemberCapacity = 1U << 22U;
 
 /** One installed item socket and the exact deduplicated plug pool it accepts. */
 struct Rule {
@@ -25,6 +31,8 @@ struct Rule {
     /** Must remain zero so the runtime and packed forms are deterministic. */
     std::uint8_t reserved{};
     std::uint32_t poolIndex{};
+    /** Native-order randomized roll-set pool for the lane, or kEmptyRollPoolIndex. */
+    std::uint32_t rollPoolIndex{};
 };
 
 /** One contiguous range in the flat, sorted plug-definition index bank. */

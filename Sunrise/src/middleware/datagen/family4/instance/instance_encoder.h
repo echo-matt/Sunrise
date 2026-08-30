@@ -43,6 +43,12 @@ enum class OrdinarySocketBlockState : std::uint8_t {
 struct OrdinarySockets {
     OrdinarySocketBlockState state{OrdinarySocketBlockState::unresolved};
     std::array<std::optional<std::uint16_t>, layout::kOrdinarySocketCapacity> plugs{};
+    /**
+     * Per-lane mask of the rows of that socket's randomized plug set this instance owns, one bit
+     * per row. The Client walks the set bits before it falls back to the definition's own plugs,
+     * so a lane that leaves this zero can only ever offer the definition's curated choices.
+     */
+    std::array<std::uint64_t, layout::kOrdinarySocketCapacity> availablePlugRows{};
 };
 
 /** Runtime table bounds required to prove every supplied native index is valid. */
@@ -65,6 +71,11 @@ struct ResolvedInstance {
     std::uint8_t socketEntryCount{};
     bool socketEntryContentsResolved{};
     OrdinarySockets ordinarySockets{};
+    /**
+     * Per-instance entropy the Client reduces to pick a plug for each randomized socket. Left
+     * all-zero, every randomized socket resolves to its plug set's first row.
+     */
+    std::array<std::uint8_t, layout::kRandomRollByteCount> randomRoll{};
     std::array<SocketEntryState, layout::kSocketEntryStateCapacity> socketEntryStates{};
     /** Selector lane per semantic ability bucket, empty for an item with no selection. */
     std::array<SocketSelector, layout::kSelectorCapacity> socketSelectors{};

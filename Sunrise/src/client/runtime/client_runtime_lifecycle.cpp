@@ -14,6 +14,7 @@
 #include "../hooks/polled_input/runtime.h"
 #include "../hooks/queuez/queuez_hook_lifecycle.h"
 #include "../hooks/retail_log/retail_log_lifecycle.h"
+#include "../hooks/sockets/sockets_lifecycle.h"
 #include "../hooks/teleport/runtime.h"
 #include "../inactivity/inactivity_settings_store.h"
 #include "../movement/movement_settings_store.h"
@@ -63,6 +64,7 @@ bool shutdown() noexcept {
         return false;
     }
     hooks::bitmap::uninstall();
+    hooks::sockets::uninstall();
     hooks::bootflow::uninstall();
     hooks::infinite_ammo::uninstall();
     hooks::inactivity::uninstall();

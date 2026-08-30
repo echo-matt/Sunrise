@@ -16,16 +16,22 @@ void clear() noexcept;
  * @param rules Strictly item/lane-ordered socket rules.
  * @param pools Contiguous member ranges, beginning with the canonical empty pool.
  * @param members Sorted unique members inside each pool range.
+ * @param rollPools Contiguous native-order ranges, beginning with the empty roll pool.
+ * @param rollMembers Native-order members inside each roll pool range.
  * @return True when every count, key, range, and pool reference is canonical.
  */
 [[nodiscard]] bool valid(std::span<const Rule> rules,
                          std::span<const Pool> pools,
-                         std::span<const Member> members) noexcept;
+                         std::span<const Member> members,
+                         std::span<const Pool> rollPools,
+                         std::span<const Member> rollMembers) noexcept;
 
-/** Replaces the complete relation atomically after validating all three arrays. */
+/** Replaces the complete relation atomically after validating all arrays. */
 [[nodiscard]] bool replace(std::span<const Rule> rules,
                            std::span<const Pool> pools,
-                           std::span<const Member> members) noexcept;
+                           std::span<const Member> members,
+                           std::span<const Pool> rollPools,
+                           std::span<const Member> rollMembers) noexcept;
 
 /**
  * Answers whether one exact plug is allowed in one installed item's ordinary socket lane.
@@ -50,13 +56,26 @@ void clear() noexcept;
                               MemberVisitor visitor,
                               void* context) noexcept;
 
+/**
+ * Walks one lane's native-order randomized roll pool.
+ * @return True when the lane has a roll pool and the visitor saw every member.
+ */
+[[nodiscard]] bool visit_roll_pool(std::uint16_t itemDefinitionIndex,
+                                   std::uint8_t lane,
+                                   MemberVisitor visitor,
+                                   void* context) noexcept;
+
 /** Copies the complete relation while holding its single shared lock. */
 [[nodiscard]] bool snapshot(std::span<Rule> rules,
                             std::size_t& ruleCount,
                             std::span<Pool> pools,
                             std::size_t& poolCount,
                             std::span<Member> members,
-                            std::size_t& memberCount) noexcept;
+                            std::size_t& memberCount,
+                            std::span<Pool> rollPools,
+                            std::size_t& rollPoolCount,
+                            std::span<Member> rollMembers,
+                            std::size_t& rollMemberCount) noexcept;
 
 /** @return Published socket-rule row count. */
 [[nodiscard]] std::size_t rule_count() noexcept;

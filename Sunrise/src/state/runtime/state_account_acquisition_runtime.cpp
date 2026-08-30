@@ -10,6 +10,7 @@
 #include "../build_data/runtime.h"
 #include "runtime.h"
 #include "state_account_transaction_helpers.h"
+#include "state_item_random_roll.h"
 #include "storage/internal.h"
 
 namespace sunrise::state {
@@ -23,7 +24,8 @@ namespace family4_loadout = middleware::datagen::family4::loadout;
 /** Prepares one native-row-checked selected-character inventory insertion. */
 bool prepare_item_acquisition(std::uint16_t collectibleIndex,
                               std::uint32_t definitionHash,
-                              PendingItemAcquisition& mutation) noexcept {
+                              PendingItemAcquisition& mutation,
+                              bool allowRandomRoll) noexcept {
     mutation = {};
     const AccountState account = account_snapshot();
     build_data::collectibles::Definition collectible{};
@@ -100,6 +102,19 @@ bool prepare_item_acquisition(std::uint16_t collectibleIndex,
     acquired.quantity = 1;
     acquired.mutationSerial = static_cast<std::int32_t>(after.nextInventorySerial++);
     acquired.sockets.policy = authored_inventory::SocketPolicy::nativeDefaults;
+
+    if (allowRandomRoll) {
+        item_details::Definition detail{};
+        if (build_data::find_configured_item_detail(grantedDefinition.definitionIndex, detail)) {
+            // The instance is the roll's own key and is folded in by the roll itself, so the seed
+            // carries only what the instance cannot supply: when the pull happened and which pull
+            // it was on this character.
+            const std::uint64_t seed = (static_cast<std::uint64_t>(GetTickCount64()) << 8U)
+                                       ^ static_cast<std::uint64_t>(after.nextInventorySerial);
+            (void)roll_random_bytes(acquired, grantedDefinition, detail, seed);
+        }
+    }
+
     after.inventory.values[inventoryIndex] = acquired;
     ++after.inventory.count;
 

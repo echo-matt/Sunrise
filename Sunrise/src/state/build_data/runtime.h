@@ -162,12 +162,16 @@ publish_configured_item_details(std::span<const items::details::Definition> defi
  * @param rules Strictly item/lane-ordered rules.
  * @param pools Deduplicated contiguous pool ranges, beginning with the empty pool.
  * @param members Flat sorted plug-definition indices.
+ * @param rollPools Contiguous native-order roll ranges, beginning with the empty roll pool.
+ * @param rollMembers Flat native-order roll plug-definition indices.
  * @return True when the relation and its item/detail links validate and any cache write succeeds.
  */
 [[nodiscard]] bool
 publish_socket_plug_rules(std::span<const items::socket_plugs::Rule> rules,
                           std::span<const items::socket_plugs::Pool> pools,
-                          std::span<const items::socket_plugs::Member> members) noexcept;
+                          std::span<const items::socket_plugs::Member> members,
+                          std::span<const items::socket_plugs::Pool> rollPools,
+                          std::span<const items::socket_plugs::Member> rollMembers) noexcept;
 
 /**
  * Answers whether one installed plug definition is valid for one exact ordinary socket lane.
@@ -182,6 +186,15 @@ publish_socket_plug_rules(std::span<const items::socket_plugs::Rule> rules,
  * @return True when the lane has a pool and the visitor saw every member.
  */
 [[nodiscard]] bool visit_socket_plug_pool(std::uint16_t itemDefinitionIndex,
+                                          std::uint8_t lane,
+                                          items::socket_plugs::MemberVisitor visitor,
+                                          void* context) noexcept;
+
+/**
+ * Walks one lane's native-order randomized roll pool. Missing relations fail closed.
+ * @return True when the lane has a roll pool and the visitor saw every member.
+ */
+[[nodiscard]] bool visit_socket_roll_pool(std::uint16_t itemDefinitionIndex,
                                           std::uint8_t lane,
                                           items::socket_plugs::MemberVisitor visitor,
                                           void* context) noexcept;

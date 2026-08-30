@@ -72,6 +72,10 @@ bool payload_checksum(records::Domains domains, std::uint64_t& checksum) noexcep
            && checksum_domain<records::SocketPlugRuleRecord>(domains.socketPlugRules, checksum)
            && checksum_domain<records::SocketPlugPoolRecord>(domains.socketPlugPools, checksum)
            && checksum_domain<records::SocketPlugMemberRecord>(domains.socketPlugMembers, checksum)
+           && checksum_domain<records::SocketPlugRollPoolRecord>(domains.socketPlugRollPools,
+                                                                 checksum)
+           && checksum_domain<records::SocketPlugRollMemberRecord>(domains.socketPlugRollMembers,
+                                                                   checksum)
            && checksum_domain<records::InventoryBucketRecord>(domains.inventoryBuckets, checksum)
            && checksum_domain<records::SocketEntryListRecord>(domains.socketEntryLists, checksum)
            && checksum_domain<records::SocketEntryTableRecord>(domains.socketEntryTables, checksum)
@@ -101,6 +105,8 @@ bool write_payload(HANDLE file, records::Domains domains) noexcept {
            && write_domain<records::SocketPlugRuleRecord>(file, domains.socketPlugRules)
            && write_domain<records::SocketPlugPoolRecord>(file, domains.socketPlugPools)
            && write_domain<records::SocketPlugMemberRecord>(file, domains.socketPlugMembers)
+           && write_domain<records::SocketPlugRollPoolRecord>(file, domains.socketPlugRollPools)
+           && write_domain<records::SocketPlugRollMemberRecord>(file, domains.socketPlugRollMembers)
            && write_domain<records::InventoryBucketRecord>(file, domains.inventoryBuckets)
            && write_domain<records::SocketEntryListRecord>(file, domains.socketEntryLists)
            && write_domain<records::SocketEntryTableRecord>(file, domains.socketEntryTables)

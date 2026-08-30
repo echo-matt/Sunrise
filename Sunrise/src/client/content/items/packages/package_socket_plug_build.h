@@ -47,10 +47,29 @@ public:
     [[nodiscard]] bool add(std::uint32_t itemDefinitionIndex,
                            std::size_t itemDefinitionCount) noexcept;
 
+    /** Roll-set visitor entry point; accepts only an in-range bounded native index. */
+    [[nodiscard]] bool add_roll(std::uint32_t itemDefinitionIndex,
+                                std::size_t itemDefinitionCount) noexcept;
+
 private:
     struct PoolLookup {
         std::uint64_t fingerprint{};
         std::uint32_t poolIndex{UINT32_MAX};
+    };
+
+    /**
+     * One interned pool bank: its contiguous ranges, the flat member array they cut up, and the
+     * open-addressed fingerprint index that finds an identical existing range. The curated and
+     * the native-order roll relations are two banks of the same shape.
+     */
+    struct Bank {
+        std::vector<socket_plugs::Pool>& pools;
+        std::vector<socket_plugs::Member>& members;
+        std::vector<PoolLookup>& lookup;
+        std::size_t& poolCount;
+        std::size_t& memberCount;
+        std::size_t poolCapacity;
+        std::size_t memberCapacity;
     };
 
     /** A plug set names three categories: reusable, randomized, and the socket's own default. */
@@ -62,8 +81,12 @@ private:
     std::vector<socket_plugs::Pool> pools_{};
     std::vector<socket_plugs::Member> members_{};
     std::vector<socket_plugs::Member> candidates_{};
+    std::vector<socket_plugs::Pool> rollPools_{};
+    std::vector<socket_plugs::Member> rollMembers_{};
+    std::vector<socket_plugs::Member> rollCandidates_{};
     std::vector<socket_plugs::Member> categoryMembers_{};
     std::vector<PoolLookup> lookup_{};
+    std::vector<PoolLookup> rollLookup_{};
     std::array<std::size_t, kCategoryCount> categoryCounts_{};
     std::array<socket_plugs::Member, 3> trackerMembers_{};
     std::size_t trackerCount_{};
@@ -71,10 +94,27 @@ private:
     std::size_t poolCount_{};
     std::size_t memberCount_{};
     std::size_t candidateCount_{};
+    std::size_t rollPoolCount_{};
+    std::size_t rollMemberCount_{};
+    std::size_t rollCandidateCount_{};
     std::size_t skipped_{};
 
+    /**
+     * Interns one exact ordered member sequence into one bank, reusing the pool an identical
+     * sequence already occupies. The sequence is taken as given: any canonical order the bank
+     * wants is the caller's to establish first.
+     * @param bank Destination ranges, members, index, and their capacities.
+     * @param candidates Non-empty member sequence to intern.
+     * @param poolIndex Receives the reused or newly appended pool.
+     * @return True when the sequence resolved to a pool, false when the bank is full.
+     */
+    [[nodiscard]] static bool intern_into(Bank bank,
+                                          std::span<const socket_plugs::Member> candidates,
+                                          std::uint32_t& poolIndex) noexcept;
     /** Expands native category families, canonicalizes, and interns the current candidate. */
     [[nodiscard]] bool intern(std::uint32_t& poolIndex) noexcept;
+    /** Interns the current native-order roll candidate as one shared roll pool. */
+    [[nodiscard]] bool intern_roll(std::uint32_t& rollPoolIndex) noexcept;
     /** Releases every transient allocation and count. */
     void release() noexcept;
 };

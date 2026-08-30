@@ -114,6 +114,8 @@ enum class WriteStatus {
         static_cast<std::uint32_t>(domains.socketPlugRules.size()),
         static_cast<std::uint32_t>(domains.socketPlugPools.size()),
         static_cast<std::uint32_t>(domains.socketPlugMembers.size()),
+        static_cast<std::uint32_t>(domains.socketPlugRollPools.size()),
+        static_cast<std::uint32_t>(domains.socketPlugRollMembers.size()),
         static_cast<std::uint32_t>(domains.inventoryBuckets.size()),
         static_cast<std::uint32_t>(domains.socketEntryLists.size()),
         static_cast<std::uint32_t>(domains.socketEntryTables.size()),

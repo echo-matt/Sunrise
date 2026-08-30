@@ -29,7 +29,7 @@ inline constexpr std::array<char, 8> kCacheMagic{'S', 'U', 'N', 'R', 'I', 'S', '
  * Bump it when a stored shape changes, and when the extraction filling it changes what it writes.
  * A cached row survives a code change, so a corrected walk keeps publishing the old rows.
  */
-inline constexpr std::uint32_t kCacheFormatVersion = 44;
+inline constexpr std::uint32_t kCacheFormatVersion = 50;
 /** Signed -1 on disk means there is no equipment slot. */
 inline constexpr std::int8_t kAbsentEquipmentSlot = -1;
 /** The standard 64-bit FNV-1a offset basis starts the payload checksum. */
@@ -73,6 +73,8 @@ struct Header {
     std::uint32_t socketPlugRuleCount{};
     std::uint32_t socketPlugPoolCount{};
     std::uint32_t socketPlugMemberCount{};
+    std::uint32_t socketPlugRollPoolCount{};
+    std::uint32_t socketPlugRollMemberCount{};
     std::uint32_t inventoryBucketCount{};
     std::uint32_t socketEntryListCount{};
     std::uint32_t socketEntryTableCount{};
@@ -116,6 +118,12 @@ struct ItemRecord {
     std::uint32_t plugCategoryHash{};
     std::uint16_t rollSetIndex{};
     std::uint16_t linkedPlugIndex{items::kUnavailableLinkedPlugIndex};
+    /** First investment-stat value (the tier of a masterwork stat plug), clamped into a byte. */
+    std::uint8_t actionStatValue{};
+    /** Stat table row of the first investment stat (the stat a masterwork plug boosts). */
+    std::uint8_t actionStatRow{};
+    /** Must be zero, so every unused disk byte always matches. */
+    std::uint8_t reserved{};
 };
 
 /** Disk form of one material charged by a native Collections acquisition. */
@@ -189,6 +197,7 @@ struct SocketPlugRuleRecord {
     /** Must be zero so all unused bytes have one canonical value. */
     std::uint8_t reserved{};
     std::uint32_t poolIndex{};
+    std::uint32_t rollPoolIndex{};
 };
 
 /** Disk form of one contiguous range in the flat allowed-plug member bank. */
@@ -199,6 +208,17 @@ struct SocketPlugPoolRecord {
 
 /** Disk form of one native item-definition index allowed as a plug. */
 struct SocketPlugMemberRecord {
+    std::uint16_t itemDefinitionIndex{};
+};
+
+/** Disk form of one contiguous range in the flat native-order roll-member bank. */
+struct SocketPlugRollPoolRecord {
+    std::uint32_t memberOffset{};
+    std::uint32_t memberCount{};
+};
+
+/** Disk form of one native item-definition index in a native-order roll pool. */
+struct SocketPlugRollMemberRecord {
     std::uint16_t itemDefinitionIndex{};
 };
 
@@ -422,7 +442,7 @@ static_assert(sizeof(Prefix) == kCacheMagic.size() + sizeof(std::uint32_t));
 static_assert(sizeof(InvestmentConstants)
               == constants::kCharacterStatRowCount + 2 * sizeof(std::uint8_t));
 static_assert(sizeof(Header)
-              == kCacheMagic.size() + 26 * sizeof(std::uint32_t) + 2 * sizeof(std::uint64_t)
+              == kCacheMagic.size() + 28 * sizeof(std::uint32_t) + 2 * sizeof(std::uint64_t)
                      + sizeof(InvestmentConstants));
 static_assert(sizeof(SpawnPointRecord)
               == spawn_sets::kPositionComponents * sizeof(float) + sizeof(std::uint32_t)
@@ -469,7 +489,7 @@ static_assert(sizeof(NamedRecord)
               == content::kDefinitionNameCapacity + 2 * sizeof(std::uint16_t)
                      + 2 * sizeof(std::uint32_t));
 static_assert(sizeof(ItemRecord)
-              == 2 * sizeof(std::uint32_t) + 5 * sizeof(std::uint16_t) + 2 * sizeof(std::uint8_t));
+              == 2 * sizeof(std::uint32_t) + 5 * sizeof(std::uint16_t) + 5 * sizeof(std::uint8_t));
 static_assert(sizeof(MaterialRequirementRecord)
               == sizeof(std::uint32_t) + 2 * sizeof(std::uint16_t) + 2 * sizeof(std::uint8_t));
 static_assert(sizeof(CollectibleRecord)
@@ -489,9 +509,11 @@ static_assert(sizeof(ItemDetailRecord)
                      + items::details::kRenderOverrideCapacity
                            * (2 * sizeof(std::uint8_t) + sizeof(std::uint16_t)));
 static_assert(sizeof(SocketPlugRuleRecord)
-              == sizeof(std::uint16_t) + 2 * sizeof(std::uint8_t) + sizeof(std::uint32_t));
+              == sizeof(std::uint16_t) + 2 * sizeof(std::uint8_t) + 2 * sizeof(std::uint32_t));
 static_assert(sizeof(SocketPlugPoolRecord) == 2 * sizeof(std::uint32_t));
 static_assert(sizeof(SocketPlugMemberRecord) == sizeof(std::uint16_t));
+static_assert(sizeof(SocketPlugRollPoolRecord) == 2 * sizeof(std::uint32_t));
+static_assert(sizeof(SocketPlugRollMemberRecord) == sizeof(std::uint16_t));
 static_assert(sizeof(InventoryBucketRecord)
               == 4 * sizeof(std::uint8_t) + 2 * sizeof(std::uint16_t));
 static_assert(sizeof(SocketEntryListRecord)

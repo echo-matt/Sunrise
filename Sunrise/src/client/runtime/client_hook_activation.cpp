@@ -27,6 +27,7 @@
 #include "../hooks/polled_input/runtime.h"
 #include "../hooks/queuez/queuez_hook_lifecycle.h"
 #include "../hooks/retail_log/retail_log_lifecycle.h"
+#include "../hooks/sockets/sockets_lifecycle.h"
 #include "../hooks/teleport/runtime.h"
 #include "../patterns/registry.h"
 #include "../targets/game.h"
@@ -181,6 +182,9 @@ void clear_game_targets() noexcept {
     // The bitmap reference guard puts the none sentinel in place of a reference outside tag
     // space. Without it the widget's stored-reference reader faults.
     (void)hooks::bitmap::install();
+    // Enforces definition plug suppression in ordinary socket mask rebuild so the hover preview
+    // tooltip displays the instance's rolled perks matching the inspect screen.
+    (void)hooks::sockets::install();
     // Read-only. It reports the status word the activity msg 12 handler writes, which is the one
     // thing that separates "the client never saw our membership body" from "it saw it and the
     // world container still did not bind".

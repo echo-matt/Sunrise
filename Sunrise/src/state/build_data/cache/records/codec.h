@@ -138,6 +138,36 @@ namespace sunrise::state::build_data::cache::records {
                           items::socket_plugs::Member& value) noexcept;
 
 /**
+ * Native-order randomized roll-set range codec.
+ * @param value Runtime row to pack. @param record Receives the packed disk row. @return Always
+ * true.
+ */
+[[nodiscard]] bool encode(items::socket_plugs::Pool value,
+                          SocketPlugRollPoolRecord& record) noexcept;
+
+/**
+ * Native-order randomized roll-set range codec. Cross-row contiguity is checked at the domain.
+ * @param record Packed disk row. @param value Receives the runtime row. @return Always true.
+ */
+[[nodiscard]] bool decode(const SocketPlugRollPoolRecord& record,
+                          items::socket_plugs::Pool& value) noexcept;
+
+/**
+ * Flat native-order roll-member codec.
+ * @param value Runtime row to pack. @param record Receives the packed disk row. @return Always
+ * true.
+ */
+[[nodiscard]] bool encode(items::socket_plugs::Member value,
+                          SocketPlugRollMemberRecord& record) noexcept;
+
+/**
+ * Flat native-order roll-member codec.
+ * @param record Packed disk row. @param value Receives the runtime row. @return Always true.
+ */
+[[nodiscard]] bool decode(const SocketPlugRollMemberRecord& record,
+                          items::socket_plugs::Member& value) noexcept;
+
+/**
  * @param value Runtime row to pack.
  * @param record Receives the packed disk row.
  * @return Always true.

@@ -27,6 +27,8 @@ namespace {
            && counts.socketPlugRules <= output.socketPlugRules.size()
            && counts.socketPlugPools <= output.socketPlugPools.size()
            && counts.socketPlugMembers <= output.socketPlugMembers.size()
+           && counts.socketPlugRollPools <= output.socketPlugRollPools.size()
+           && counts.socketPlugRollMembers <= output.socketPlugRollMembers.size()
            && counts.inventoryBuckets <= output.inventoryBuckets.size()
            && counts.socketEntryLists <= output.socketEntryLists.size()
            && counts.socketEntryTables <= output.socketEntryTables.size()
@@ -55,6 +57,8 @@ namespace {
         header.socketPlugRuleCount,
         header.socketPlugPoolCount,
         header.socketPlugMemberCount,
+        header.socketPlugRollPoolCount,
+        header.socketPlugRollMemberCount,
         header.inventoryBucketCount,
         header.socketEntryListCount,
         header.socketEntryTableCount,

@@ -140,6 +140,8 @@ template <typename Value, typename Less>
            && counts.socketPlugRules <= domains.socketPlugRules.size()
            && counts.socketPlugPools <= domains.socketPlugPools.size()
            && counts.socketPlugMembers <= domains.socketPlugMembers.size()
+           && counts.socketPlugRollPools <= domains.socketPlugRollPools.size()
+           && counts.socketPlugRollMembers <= domains.socketPlugRollMembers.size()
            && counts.inventoryBuckets <= domains.inventoryBuckets.size()
            && counts.socketEntryLists <= domains.socketEntryLists.size()
            && counts.socketEntryTables <= domains.socketEntryTables.size()
@@ -212,8 +214,11 @@ bool valid_domains(Domains domains) noexcept {
         || !socket_entry_lists::valid(domains.socketEntryLists)
         || !socket_entry_lists::valid_entry_tables(domains.socketEntryTables)
         || !strictly_ordered(domains.itemDetails, detail_less)
-        || !items::socket_plugs::valid(
-            domains.socketPlugRules, domains.socketPlugPools, domains.socketPlugMembers)
+        || !items::socket_plugs::valid(domains.socketPlugRules,
+                                       domains.socketPlugPools,
+                                       domains.socketPlugMembers,
+                                       domains.socketPlugRollPools,
+                                       domains.socketPlugRollMembers)
         || !abilities::valid(domains.abilityBuckets)
         || !strictly_ordered(domains.abilityBuckets, ability_less)
         || !progressions::valid(domains.progressions)
@@ -263,6 +268,8 @@ bool valid_domains(Domains domains) noexcept {
            && valid_socket_plug_links(domains.socketPlugRules,
                                       domains.socketPlugPools,
                                       domains.socketPlugMembers,
+                                      domains.socketPlugRollPools,
+                                      domains.socketPlugRollMembers,
                                       domains.items,
                                       domains.itemDetails);
 }
